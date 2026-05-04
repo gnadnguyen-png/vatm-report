@@ -1,0 +1,5 @@
+{
+  "name": "Expert Safety Analysis AI",
+  "description": "Hệ thống AI Chuyên gia Phân tích An toàn cho Báo cáo An toàn Tự nguyện. Phân tích mối nguy theo mô hình SHELL và đánh giá rủi ro sơ bộ.",
+  "requestFramePermissions": []
+}

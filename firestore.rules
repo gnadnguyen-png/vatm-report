@@ -1,0 +1,75 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // 0. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Helper Functions ---
+    
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Validation for Report entity
+    function isValidReport(data) {
+      return data.keys().hasAll(['id', 'ngay_xay_ra', 'loai_vu_viec', 'chi_tiet_su_viec', 'created_at', 'status'])
+        && data.id is string && data.id.size() <= 128
+        && data.ngay_xay_ra is string && data.ngay_xay_ra.size() <= 20
+        && data.loai_vu_viec is string && data.loai_vu_viec.size() <= 100
+        && data.chi_tiet_su_viec is string && data.chi_tiet_su_viec.size() <= 5000
+        && data.created_at is string && data.created_at.size() <= 50
+        && data.status in ['pending', 'processing', 'completed', 'archived']
+        && (!('nguoi_bao_cao' in data) || (data.nguoi_bao_cao is string && data.nguoi_bao_cao.size() <= 100))
+        && (!('don_vi' in data) || (data.don_vi is string && data.don_vi.size() <= 100))
+        && (!('is_anonymous' in data) || (data.is_anonymous is bool))
+        && (!('email' in data) || (data.email is string && data.email.size() <= 255))
+        // analysis is optional but must be valid if present
+        && (!('analysis' in data) || isValidAnalysis(data.analysis));
+    }
+
+    function isValidAnalysis(analysis) {
+      return analysis.keys().hasAll(['ngay_xay_ra', 'loai_vu_viec', 'tieu_de_bao_cao', 'tom_tat_an_danh', 'moi_nguy_goc_re', 'muc_do_rui_ro', 'tan_suat_rui_ro', 'de_xuat_xu_ly', 'shell_analysis'])
+        && analysis.muc_do_rui_ro in ['A', 'B', 'C', 'D', 'E']
+        && analysis.tan_suat_rui_ro in ['1', '2', '3', '4', '5'];
+    }
+
+    // --- Collection Rules ---
+
+    match /reports/{reportId} {
+      // Allow anybody to create a report (since it's a voluntary reporting system)
+      // but enforce validation
+      allow create: if isValidId(reportId) && isValidReport(incoming()) && incoming().id == reportId;
+      
+      // For now, allow public read of the list and individual reports 
+      // (This should be hardened if user management is added)
+      allow read: if true;
+      
+      // Only allow updating specific fields (like status or AI analysis) if the report exists
+      allow update: if isValidReport(incoming()) 
+        && incoming().id == existing().id
+        && (
+          // Action: Mark as processing or update analysis
+          incoming().diff(existing()).affectedKeys().hasOnly(['status', 'analysis', 'response'])
+        );
+        
+      // No deletions allowed via client for safety audit integrity
+      allow delete: if false;
+    }
+  }
+}

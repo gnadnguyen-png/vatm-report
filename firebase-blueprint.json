@@ -1,0 +1,56 @@
+{
+  "entities": {
+    "Report": {
+      "title": "Safety Report",
+      "description": "A safety report submitted by a user with AI analysis results.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "ngay_xay_ra": { "type": "string" },
+        "nguoi_bao_cao": { "type": "string" },
+        "is_anonymous": { "type": "boolean" },
+        "don_vi": { "type": "string" },
+        "loai_vu_viec": { "type": "string" },
+        "chi_tiet_su_viec": { "type": "string" },
+        "email": { "type": "string" },
+        "created_at": { "type": "string", "format": "date-time" },
+        "status": { 
+          "type": "string", 
+          "enum": ["pending", "processing", "completed", "archived"] 
+        },
+        "response": { "type": "string" },
+        "analysis": {
+          "type": "object",
+          "properties": {
+            "ngay_xay_ra": { "type": "string" },
+            "loai_vu_viec": { "type": "string" },
+            "tieu_de_bao_cao": { "type": "string" },
+            "tom_tat_an_danh": { "type": "string" },
+            "moi_nguy_goc_re": { "type": "string" },
+            "muc_do_rui_ro": { "type": "string", "enum": ["A", "B", "C", "D", "E"] },
+            "tan_suat_rui_ro": { "type": "string", "enum": ["1", "2", "3", "4", "5"] },
+            "de_xuat_xu_ly": { "type": "string" },
+            "shell_analysis": {
+              "type": "object",
+              "properties": {
+                "software": { "type": "string" },
+                "hardware": { "type": "string" },
+                "environment": { "type": "string" },
+                "liveware": { "type": "string" },
+                "liveware_other": { "type": "string" }
+              }
+            },
+            "classification_warning": { "type": "string" }
+          }
+        }
+      },
+      "required": ["id", "ngay_xay_ra", "loai_vu_viec", "chi_tiet_su_viec", "created_at", "status"]
+    }
+  },
+  "firestore": {
+    "/reports/{reportId}": {
+      "schema": "Report",
+      "description": "Publicly submitted reports (anonymous or identified)."
+    }
+  }
+}
